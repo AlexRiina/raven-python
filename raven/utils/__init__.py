@@ -28,22 +28,6 @@ _VERSION_CACHE = {}
 def get_version_from_app(module_name, app):
     version = None
 
-    # Try to pull version from pkg_resources first
-    # as it is able to detect version tagged with egg_info -b
-    try:
-        # Importing pkg_resources can be slow, so only import it
-        # if we need it.
-        import pkg_resources
-    except ImportError:
-        # pkg_resource is not available on Google App Engine
-        pass
-    else:
-        # pull version from pkg_resources if distro exists
-        try:
-            return pkg_resources.get_distribution(module_name).version
-        except Exception:
-            pass
-
     if hasattr(app, 'get_version'):
         version = app.get_version
     elif hasattr(app, '__version__'):
@@ -60,12 +44,26 @@ def get_version_from_app(module_name, app):
         version = None
 
     if version is None:
-        return None
+        # Try to pull version from pkg_resources first
+        # as it is able to detect version tagged with egg_info -b
+        try:
+            # Importing pkg_resources can be slow, so only import it
+            # if we need it.
+            import pkg_resources
+        except ImportError:
+            # pkg_resource is not available on Google App Engine
+            pass
+        else:
+            # pull version from pkg_resources if distro exists
+            try:
+                return pkg_resources.get_distribution(module_name).version
+            except Exception:
+                return None
+    else:
+        if isinstance(version, (list, tuple)):
+            version = '.'.join(map(str, version))
 
-    if isinstance(version, (list, tuple)):
-        version = '.'.join(map(str, version))
-
-    return str(version)
+        return str(version)
 
 
 def get_versions(module_list=None):
